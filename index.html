@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="description" content="4thGen Studio — LED focused, visually obsessive, results driven." />
+  <title>4thGen Studio</title>
+  <link rel="stylesheet" href="/src/style/base.css" />
+</head>
+<body>
+
+  <!-- ─── Loader screen ─────────────────────────────────────────── -->
+  <div id="loader-screen">
+    <div class="ls-body">
+      <p class="ls-eyebrow">Your Creative Passport</p>
+      <img class="ls-studio" src="/images/4thGen.png" alt="4thGen Studio" />
+      <div class="ls-track">
+        <div class="ls-fill" id="loaderFill"></div>
+      </div>
+      <p class="ls-num" id="loaderPercent">0</p>
+    </div>
+  </div>
+
+  <!-- ─── Mobile menu overlay ───────────────────────────────────── -->
+  <div id="mobile-menu" aria-hidden="true">
+    <ul class="mobile-menu__links">
+      <li><span class="mobile-menu__link" data-section="work">Work</span></li>
+      <li><span class="mobile-menu__link" data-section="about">About</span></li>
+      <li><span class="mobile-menu__link" data-section="contact">Contact</span></li>
+    </ul>
+    <div class="mobile-menu__footer">
+      <p>4thGen Studio © 2026</p>
+      <p>LED Focused · Results Driven</p>
+    </div>
+  </div>
+
+  <!-- ─── Detail room — back button (shows when inside 3D room) ── -->
+  <button id="room-back" style="display:none" aria-label="Back"></button>
+
+  <!-- ─── Video modal (opens when room card is clicked) ──────── -->
+  <div id="video-modal" aria-hidden="true">
+    <button id="video-modal-close" aria-label="Close">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <path d="M1 1L13 13M13 1L1 13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
+    <video id="video-modal-player" playsinline controls></video>
+    <p class="video-modal-title"></p>
+  </div>
+
+  <!-- ─── WebGL canvas ──────────────────────────────────────────── -->
+  <canvas id="webgl"></canvas>
+
+  <!-- ─── HTML overlay ─────────────────────────────────────────── -->
+  <div id="overlay">
+
+    <!-- Nav -->
+    <nav id="nav">
+      <span class="nav-logo" data-section="hero"><img src="/images/4thGen.png" alt="4thGen Studio" /></span>
+
+      <ul class="nav-links">
+        <li><a data-section="work">Work</a></li>
+        <li><a data-section="about">About</a></li>
+        <li><a data-section="contact">Contact</a></li>
+      </ul>
+
+      <!-- Mobile hamburger -->
+      <button class="nav-hamburger" id="navHamburger" aria-label="Menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </nav>
+
+    <!-- Active project info — bottom left -->
+    <div id="info-panel">
+      <span class="info-panel__label">Services</span>
+      <p class="info-panel__title">Casino Content</p>
+      <p class="info-panel__year">4thGen Studio</p>
+    </div>
+
+    <!-- Scroll hint -->
+    <div class="scroll-hint" id="scrollHint">
+      <span>Scroll</span>
+      <div class="scroll-hint__line"></div>
+    </div>
+
+    <!-- Nav dots — right side -->
+    <div id="nav-dots">
+      <button class="nav-dot active" data-index="0" data-label="Hero"     aria-label="Hero"></button>
+      <button class="nav-dot"        data-index="1" data-label="Work"     aria-label="Work"></button>
+      <button class="nav-dot"        data-index="2" data-label="About"    aria-label="About"></button>
+    </div>
+
+  </div>
+
+  <!-- Scroll spacer — tạo chiều cao để Lenis có thể scroll -->
+  <!-- Tất cả visual elements đều position:fixed, cái này invisible -->
+  <div id="scroll-spacer" aria-hidden="true"></div>
+
+  <!-- Custom cursor — outside overlay so z-index is in root stacking context -->
+  <div id="cursor">
+    <div class="cursor-dot"></div>
+    <div class="cursor-ring"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

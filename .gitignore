@@ -1,0 +1,11 @@
+node_modules/
+dist/
+
+.agents/
+.claude/
+.playwright-mcp/
+
+test-*.png
+smokecursor.txt
+
+.env
