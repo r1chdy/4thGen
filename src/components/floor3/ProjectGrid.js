@@ -187,7 +187,7 @@ export class ProjectGrid {
 
     const videoEl = document.createElement('video')
     this.videoEl        = videoEl
-    videoEl.src         = 'https://github.com/r1chdy/4thGen/releases/download/v1.0-assets/hero-bg.mp4'
+    videoEl.src         = 'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/hero-bg.mp4'
     videoEl.loop        = true
     videoEl.muted       = true
     videoEl.playsInline = true
@@ -220,7 +220,7 @@ export class ProjectGrid {
   async _buildCards(loader) {
     const texLoader = new THREE.TextureLoader()
     const gltf = await new Promise((res, rej) =>
-      new GLTFLoader().load('https://github.com/r1chdy/4thGen/releases/download/v1.0-assets/card.glb', res, undefined, rej)
+      new GLTFLoader().load('https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/card.glb', res, undefined, rej)
     )
 
     const W = 2.4

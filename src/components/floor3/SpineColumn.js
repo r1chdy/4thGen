@@ -39,7 +39,7 @@ export class SpineColumn {
   _load() {
     const loader = new GLTFLoader()
     loader.load(
-      'https://github.com/r1chdy/4thGen/releases/download/v1.0-assets/Dragon_Head_web.glb',
+      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/Dragon_Head_web.glb',
       (gltf) => {
         const model = gltf.scene
 
@@ -93,7 +93,7 @@ export class SpineColumn {
   _loadEyes(model) {
     const loader = new GLTFLoader()
     loader.load(
-      'https://github.com/r1chdy/4thGen/releases/download/v1.0-assets/Dragon_Eyes_web.glb',
+      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/Dragon_Eyes_web.glb',
       (gltf) => {
         const eyes = gltf.scene
         eyes.position.copy(model.position)

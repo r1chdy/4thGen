@@ -131,7 +131,7 @@ export class LogoHero {
   _load() {
     const loader = new GLTFLoader()
     loader.load(
-      'https://github.com/r1chdy/4thGen/releases/download/v1.0-assets/4thgen_logo.glb',
+      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/4thgen_logo.glb',
       (gltf) => {
         const model  = gltf.scene
         const box    = new THREE.Box3().setFromObject(model)
