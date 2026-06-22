@@ -108,7 +108,7 @@ const fragmentShader = `
 const HERO_Y = 5.0
 
 export class LogoHero {
-  constructor(scene) {
+  constructor(scene, gltf) {
     this._scene      = scene.instance
     this._group      = new THREE.Group()
     this._mats       = []
@@ -125,60 +125,52 @@ export class LogoHero {
     })
 
     this._scene.add(this._group)
-    this._load()
+    if (gltf) this._applyGLTF(gltf)
   }
 
-  _load() {
-    const loader = new GLTFLoader()
-    loader.load(
-      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/4thgen_logo.glb',
-      (gltf) => {
-        const model  = gltf.scene
-        const box    = new THREE.Box3().setFromObject(model)
-        const size   = new THREE.Vector3()
-        const center = new THREE.Vector3()
-        box.getSize(size)
-        box.getCenter(center)
+  _applyGLTF(gltf) {
+    const model  = gltf.scene
+    const box    = new THREE.Box3().setFromObject(model)
+    const size   = new THREE.Vector3()
+    const center = new THREE.Vector3()
+    box.getSize(size)
+    box.getCenter(center)
 
-        const maxDim = Math.max(size.x, size.y, size.z)
-        const scale  = 2.0 / maxDim
-        model.scale.setScalar(scale)
-        model.position.sub(center.multiplyScalar(scale))
-        model.position.y += HERO_Y
+    const maxDim = Math.max(size.x, size.y, size.z)
+    const scale  = 2.0 / maxDim
+    model.scale.setScalar(scale)
+    model.position.sub(center.multiplyScalar(scale))
+    model.position.y += HERO_Y
 
-        model.traverse(child => {
-          if (!child.isMesh) return
-          const mat = new THREE.ShaderMaterial({
-            vertexShader,
-            fragmentShader,
-            uniforms: {
-              uTime:          { value: 0 },
-              uEnterAlpha:    { value: 0 },
-              uScrollFade:    { value: 1 },
-              uMouse:         { value: new THREE.Vector2(0.5, 0.5) },
-              uMouseStrength: { value: 0 },
-            },
-            transparent: true,
-            side:        THREE.DoubleSide,
-            depthWrite:  false,
-          })
-          child.material = mat
-          this._mats.push(mat)
-        })
+    model.traverse(child => {
+      if (!child.isMesh) return
+      const mat = new THREE.ShaderMaterial({
+        vertexShader,
+        fragmentShader,
+        uniforms: {
+          uTime:          { value: 0 },
+          uEnterAlpha:    { value: 0 },
+          uScrollFade:    { value: 1 },
+          uMouse:         { value: new THREE.Vector2(0.5, 0.5) },
+          uMouseStrength: { value: 0 },
+        },
+        transparent: true,
+        side:        THREE.DoubleSide,
+        depthWrite:  false,
+      })
+      child.material = mat
+      this._mats.push(mat)
+    })
 
-        this._group.add(model)
-        this._ready = true
+    this._group.add(model)
+    this._ready = true
 
-        gsap.to(this._enterProxy, {
-          v: 1, duration: 1.6, delay: 0.3, ease: 'power2.out',
-          onUpdate: () => {
-            this._mats.forEach(m => { m.uniforms.uEnterAlpha.value = this._enterProxy.v })
-          },
-        })
+    gsap.to(this._enterProxy, {
+      v: 1, duration: 1.6, delay: 0.3, ease: 'power2.out',
+      onUpdate: () => {
+        this._mats.forEach(m => { m.uniforms.uEnterAlpha.value = this._enterProxy.v })
       },
-      undefined,
-      err => console.error('[LogoHero] load error:', err)
-    )
+    })
   }
 
   update({ elapsed, progress }) {

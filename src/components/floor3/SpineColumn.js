@@ -1,6 +1,5 @@
 // Model 3D trung tâm (cột xương sống) — load file GLTF, tự xoay, nằm giữa các tấm card khi scroll
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import { CAM_Y_START, CAM_Y_RANGE } from './ProjectGrid.js'
 
 const COL_CENTER_Y = CAM_Y_START - CAM_Y_RANGE * 0.5
@@ -12,14 +11,15 @@ const COL_ROT_Y = -3.14
 const EYE_NAMES = ['Eye_L.003', 'Eye_R.003']
 
 export class SpineColumn {
-  constructor(scene) {
+  constructor(scene, headGltf, eyesGltf) {
     this._group = new THREE.Group()
     this._group.position.set(COL_X, COL_Y, COL_Z)
     this._group.rotation.y = COL_ROT_Y
     scene.instance.add(this._group)
     this._mixer = null
     this._addLights()
-    this._load()
+    if (headGltf) this._applyHead(headGltf)
+    if (eyesGltf) this._applyEyes(eyesGltf, headGltf?.scene)
   }
 
   _addLights() {
@@ -36,89 +36,48 @@ export class SpineColumn {
     this._group.add(under)
   }
 
-  _load() {
-    const loader = new GLTFLoader()
-    loader.load(
-      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/Dragon_Head_web.glb',
-      (gltf) => {
-        const model = gltf.scene
-
-        // Auto-fit: center + scale to fit within the scroll column
-        const box    = new THREE.Box3().setFromObject(model)
-        const size   = new THREE.Vector3()
-        const center = new THREE.Vector3()
-        box.getSize(size)
-        box.getCenter(center)
-
-        const maxDim    = Math.max(size.x, size.y, size.z)
-        const targetSize = 35         // world units tall
-        const scale     = targetSize / maxDim
-
-        model.scale.setScalar(scale)
-        model.position.sub(center.multiplyScalar(scale))  // re-center after scale
-
-        model.traverse(child => {
-          if (!child.isMesh) return
-
-          // Hide baked-in eye meshes — dedicated glowing eyes load separately
-          if (EYE_NAMES.includes(child.name)) {
-            child.visible = false
-            return
-          }
-
-          const mats = Array.isArray(child.material) ? child.material : [child.material]
-          mats.forEach(m => {
-            m.emissive = m.color.clone()
-            m.emissiveIntensity = 0
-          })
-        })
-
-        this._group.add(model)
-
-        // Play animations if any
-        if (gltf.animations?.length) {
-          this._mixer = new THREE.AnimationMixer(model)
-          gltf.animations.forEach(clip => {
-            this._mixer.clipAction(clip).play()
-          })
-        }
-
-        this._loadEyes(model)
-      },
-      undefined,
-      (err) => console.error('[SpineColumn] load error:', err)
-    )
+  _applyHead(gltf) {
+    const model = gltf.scene
+    const box   = new THREE.Box3().setFromObject(model)
+    const size  = new THREE.Vector3()
+    const center = new THREE.Vector3()
+    box.getSize(size)
+    box.getCenter(center)
+    const scale = 35 / Math.max(size.x, size.y, size.z)
+    model.scale.setScalar(scale)
+    model.position.sub(center.multiplyScalar(scale))
+    model.traverse(child => {
+      if (!child.isMesh) return
+      if (EYE_NAMES.includes(child.name)) { child.visible = false; return }
+      const mats = Array.isArray(child.material) ? child.material : [child.material]
+      mats.forEach(m => { m.emissive = m.color.clone(); m.emissiveIntensity = 0 })
+    })
+    this._group.add(model)
+    if (gltf.animations?.length) {
+      this._mixer = new THREE.AnimationMixer(model)
+      gltf.animations.forEach(clip => this._mixer.clipAction(clip).play())
+    }
   }
 
-  _loadEyes(model) {
-    const loader = new GLTFLoader()
-    loader.load(
-      'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/Dragon_Eyes_web.glb',
-      (gltf) => {
-        const eyes = gltf.scene
-        eyes.position.copy(model.position)
-        eyes.scale.copy(model.scale)
-        eyes.quaternion.copy(model.quaternion)
-
-        eyes.traverse(child => {
-          if (!child.isMesh) return
-          const mats = Array.isArray(child.material) ? child.material : [child.material]
-          mats.forEach(m => {
-            m.color.set(0xd4af37)
-            m.roughness = 0.2
-            m.metalness = 0.9
-            m.emissiveIntensity = 0
-          })
-
-          const glowLight = new THREE.PointLight(0xffaa00, 4, 6)
-          child.add(glowLight)
-        })
-
-        this._group.add(eyes)
-      },
-      undefined,
-      (err) => console.error('[SpineColumn] eyes load error:', err)
-    )
+  _applyEyes(gltf, headScene) {
+    const eyes = gltf.scene
+    if (headScene) {
+      eyes.position.copy(headScene.position)
+      eyes.scale.copy(headScene.scale)
+      eyes.quaternion.copy(headScene.quaternion)
+    }
+    eyes.traverse(child => {
+      if (!child.isMesh) return
+      const mats = Array.isArray(child.material) ? child.material : [child.material]
+      mats.forEach(m => {
+        m.color.set(0xd4af37)
+        m.roughness = 0.2
+        m.metalness = 0.9
+        m.emissiveIntensity = 0
+      })
+      child.add(new THREE.PointLight(0xffaa00, 4, 6))
+    })
+    this._group.add(eyes)
   }
 
   get group() { return this._group }

@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 // Palette cho 5 project cards khi chưa có ảnh thật
 const PLACEHOLDER_PALETTES = [
@@ -75,6 +76,8 @@ export class AssetLoader {
       for (const [key, entry] of this.assets) {
         if (entry.url.match(/\.(mp4|webm)$/i)) {
           this._loadVideo(key, entry, resolve)
+        } else if (entry.url.match(/\.(glb|gltf)$/i)) {
+          this._loadGLTF(key, entry, resolve)
         } else {
           this._loadTexture(key, entry, resolve)
         }
@@ -113,6 +116,21 @@ export class AssetLoader {
       this._onAssetLoaded(resolve)
     }
     video.onerror = () => this._onAssetLoaded(resolve)
+  }
+
+  _loadGLTF(key, entry, resolve) {
+    new GLTFLoader().load(
+      entry.url,
+      (gltf) => {
+        entry.resource = gltf
+        this._onAssetLoaded(resolve)
+      },
+      undefined,
+      () => {
+        entry.resource = null
+        this._onAssetLoaded(resolve)
+      }
+    )
   }
 
   _onAssetLoaded(resolve) {

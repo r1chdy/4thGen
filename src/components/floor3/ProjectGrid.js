@@ -174,7 +174,7 @@ const fragmentShader = `
 /* ─── ProjectGrid ─────────────────────────────────────────────────── */
 
 export class ProjectGrid {
-  constructor(scene, loader) {
+  constructor(scene, loader, cardGltf) {
     this.scene      = scene.instance
     this.camera     = scene.camera
     this.cards      = []
@@ -198,7 +198,7 @@ export class ProjectGrid {
     this.group = new THREE.Group()
     this.scene.add(this.group)
 
-    this._buildCards(loader)
+    this._buildCards(loader, cardGltf)
     this._bindEvents()
     window.addEventListener('resize', () => this._applyScale())
   }
@@ -217,9 +217,9 @@ export class ProjectGrid {
     })
   }
 
-  async _buildCards(loader) {
+  async _buildCards(loader, gltf) {
     const texLoader = new THREE.TextureLoader()
-    const gltf = await new Promise((res, rej) =>
+    if (!gltf) gltf = await new Promise((res, rej) =>
       new GLTFLoader().load('https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/card.glb', res, undefined, rej)
     )
 
