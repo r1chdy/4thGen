@@ -36,6 +36,14 @@ const TEXTURE_URLS = [
   '/textures/proj5.jpg',
 ]
 
+const BASE = 'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com'
+const MODEL_URLS = {
+  dragonHead: `${BASE}/Dragon_Head_web.glb`,
+  dragonEyes: `${BASE}/Dragon_Eyes_web.glb`,
+  logo:       `${BASE}/4thgen_logo.glb`,
+  card:       `${BASE}/card.glb`,
+}
+
 // 3 sections, mỗi cái 1 viewport — targetY = idx * innerHeight
 const SECTION_COUNT = 3
 const sectionScroll = (idx) => Math.max(0, idx) * window.innerHeight
@@ -50,6 +58,7 @@ async function init() {
   // ── Assets ───────────────────────────────────────────────────────
   const loader = new AssetLoader()
   TEXTURE_URLS.forEach((url, i) => loader.queue('proj' + (i + 1), url))
+  Object.entries(MODEL_URLS).forEach(([key, url]) => loader.queue(key, url))
 
   // ── Components ───────────────────────────────────────────────────
   // ── Environments ─────────────────────────────────────────────────
@@ -71,13 +80,13 @@ async function init() {
     heroOrthoCamera.updateProjectionMatrix()
   })
 
-  const bg          = new Background(scene)
-  const grid        = new ProjectGrid(scene, loader)
-  const spineColumn     = new SpineColumn(scene)
-  const SPINE_BASE_Y    = spineColumn.group.position.y
+  const bg = new Background(scene)
+  let grid        = null
+  let spineColumn = null
+  let videoLight  = null
+  let SPINE_BASE_Y = 0
   new SmokeCursor()
-  const videoLight      = new VideoLight(scene, grid.videoEl)
-  const heroText        = new HeroText(heroTextWrapper)
+  const heroText = new HeroText(heroTextWrapper)
 
   const detailRoom      = new DetailRoom()
   const compositor      = new Compositor(renderer.instance)
@@ -185,8 +194,8 @@ async function init() {
       _camTheta   += (_targetTheta   - _camTheta)   * 0.04
     }
 
-    grid.group.position.y        = 0
-    spineColumn.group.position.y = SPINE_BASE_Y
+    if (grid)        grid.group.position.y        = 0
+    if (spineColumn) spineColumn.group.position.y = SPINE_BASE_Y
 
     scene.instance.rotation.y = -_camTheta
     scene.update(_camScrollY, _camTheta)
@@ -197,9 +206,9 @@ async function init() {
     const fovRad    = THREE.MathUtils.degToRad(scene.camera.fov)
     const vertScale = 2 * Math.tan(fovRad / 2) * CAM_RADIUS
     bg.update({ elapsed, camY: scene.camera.position.y, vertScale })
-    grid.update({ elapsed, camY: scene.camera.position.y })
-    spineColumn.update({ elapsed, delta })
-    videoLight.update()
+    if (grid)        grid.update({ elapsed, camY: scene.camera.position.y })
+    if (spineColumn) spineColumn.update({ elapsed, delta })
+    if (videoLight)  videoLight.update()
     if (logoHero) logoHero.update({ elapsed, progress })
     heroText.update({ progress, camY: scene.camera.position.y, vertScale })
     detailRoom.update(delta)
@@ -290,6 +299,11 @@ async function init() {
     new Promise(r => setTimeout(r, 800)),
   ])
 
+  grid         = new ProjectGrid(scene, loader, loader.get('card'))
+  spineColumn  = new SpineColumn(scene, loader.get('dragonHead'), loader.get('dragonEyes'))
+  SPINE_BASE_Y = spineColumn.group.position.y
+  videoLight   = new VideoLight(scene, grid.videoEl)
+
   // Counter đến 100
   await new Promise(resolve => {
     gsap.to(counter, {
@@ -319,7 +333,7 @@ async function init() {
     ease: 'power3.inOut',
     onComplete: () => {
       document.getElementById('loader-screen').style.display = 'none'
-      logoHero = new LogoHero(logoWrapper)
+      logoHero = new LogoHero(logoWrapper, loader.get('logo'))
     },
   }, '-=0.1')
   .to('#overlay', { opacity: 1, duration: 0.4, ease: 'power2.out' }, '-=0.4')
