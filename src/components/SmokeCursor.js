@@ -53,12 +53,11 @@ export class SmokeCursor {
     })
 
     window.addEventListener('touchmove', e => {
-      e.preventDefault()
       const rect  = c.getBoundingClientRect()
       const dpr   = window.devicePixelRatio || 1
       const touch = e.targetTouches[0]
       this._updateMove((touch.clientX - rect.left) * dpr, (touch.clientY - rect.top) * dpr)
-    }, { passive: false })
+    }, { passive: true })
 
     window.addEventListener('resize', () => this._resize())
   }
