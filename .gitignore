@@ -2,9 +2,7 @@ node_modules/
 dist/
 
 public/video/
-public/models/*.glb
-public/models/Earth/
-public/models/Landmark/
+public/models/
 public/hdri/
 
 .agents/
