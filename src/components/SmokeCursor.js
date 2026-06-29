@@ -22,6 +22,8 @@ export class SmokeCursor {
     this._loop()
   }
 
+  get canvas () { return this._canvas }
+
   _createCanvas () {
     const c = document.createElement('canvas')
     Object.assign(c.style, {
@@ -31,7 +33,7 @@ export class SmokeCursor {
       height:        '100%',
       pointerEvents: 'none',
       zIndex:        '5',
-      mixBlendMode:  'screen',
+      opacity:       '0',
     })
     document.body.appendChild(c)
     return c

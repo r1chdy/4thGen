@@ -2,7 +2,9 @@
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import gsap from 'gsap'
-import { Text } from 'troika-three-text'
+let Text = null
+let _troika = null
+const ensureText = () => (_troika ??= import('troika-three-text').then(m => { Text = m.Text }))
 
 const FONT = '/fonts/SpaceMono-Bold.ttf'
 
@@ -187,7 +189,7 @@ export class ProjectGrid {
 
     const videoEl = document.createElement('video')
     this.videoEl        = videoEl
-    videoEl.src         = 'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/hero-bg.mp4'
+    videoEl.src         = '/video/hero-bg.mp4'
     videoEl.loop        = true
     videoEl.muted       = true
     videoEl.playsInline = true
@@ -209,6 +211,7 @@ export class ProjectGrid {
   }
 
   get baseScale() { return this._cardScale() }
+  get videoTex()  { return this._videoTex }
 
   _applyScale() {
     const s = this._cardScale()
@@ -218,9 +221,10 @@ export class ProjectGrid {
   }
 
   async _buildCards(loader, gltf) {
+    await ensureText()
     const texLoader = new THREE.TextureLoader()
     if (!gltf) gltf = await new Promise((res, rej) =>
-      new GLTFLoader().load('https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com/card.glb', res, undefined, rej)
+      new GLTFLoader().load('https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev/card.glb', res, undefined, rej)
     )
 
     const W = 2.4

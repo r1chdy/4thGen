@@ -1,6 +1,4 @@
-// Logo 3D ở màn hình đầu (hero section) — load file GLB, shader chrome, animation xuất hiện
 import * as THREE from 'three'
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 import gsap from 'gsap'
 
 const vertexShader = `
@@ -30,12 +28,9 @@ const fragmentShader = `
   in vec4 vClipPos;
   uniform float uTime;
   uniform float uEnterAlpha;
-  uniform float uScrollFade;
   uniform vec2  uMouse;
   uniform float uMouseStrength;
   uniform sampler2D uVideoTex;
-  uniform float uCamY;
-  uniform float uVertScale;
   out vec4 fragColor;
 
   float hash(vec2 p) {
@@ -59,10 +54,8 @@ const fragmentShader = `
     vec2 f  = fract(p);
     vec2 u  = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
     vec2 du = 30.0 * f * f * (f * (f - 2.0) + 1.0);
-    vec2 ga = ghash(i);
-    vec2 gb = ghash(i + vec2(1,0));
-    vec2 gc = ghash(i + vec2(0,1));
-    vec2 gd = ghash(i + vec2(1,1));
+    vec2 ga = ghash(i); vec2 gb = ghash(i + vec2(1,0));
+    vec2 gc = ghash(i + vec2(0,1)); vec2 gd = ghash(i + vec2(1,1));
     float va = dot(ga, f);
     float vb = dot(gb, f - vec2(1,0));
     float vc = dot(gc, f - vec2(0,1));
@@ -82,10 +75,6 @@ const fragmentShader = `
     float rim     = smoothstep(0.3, 1.0, rimR);
 
     vec2 screenUV  = (vClipPos.xy / vClipPos.w) * 0.5 + 0.5;
-
-    float worldYFrag = uCamY + (screenUV.y - 0.5) * uVertScale;
-    float tiltedY    = worldYFrag + (screenUV.x - 0.5) * 1.5;
-    if (tiltedY < 0.0) discard;
     vec2 refractUV = (screenUV - 0.5) * 2.0 + 0.5 + vNormalView.xy * 0.035
                    + gn.yz * roughness * 0.010;
     float dofRadius = pow(1.0 - NdotV, 1.8) * 0.032;
@@ -110,20 +99,18 @@ const fragmentShader = `
     float halo  = smoothstep(0.28, 0.0, mDist) * uMouseStrength;
     col += vec3(0.80, 0.10, 0.14) * halo * (0.5 + rim * 0.5);
 
-    float n1    = noise(screenUV * 12.0 + uTime * 0.2);
-    float n2    = noise(screenUV * 24.0 - uTime * 0.4) * 0.5;
-    float grain = smoothstep(0.55, 0.72, (n1 + n2) / 1.5);
+    float n1    = noise(screenUV * 4.0 + uTime * 0.08);
+    float n2    = noise(screenUV * 8.0  - uTime * 0.15) * 0.5;
+    float grain = smoothstep(0.30, 0.75, (n1 + n2) / 1.5);
     float faceW = 1.0 - smoothstep(0.0, 0.50, rim);
 
     float alpha    = mix(0.10, 1.0, max(fresnel, edgeLine * 0.9));
     float cutAlpha = mix(0.0, alpha, grain * faceW + (1.0 - faceW));
-    fragColor = vec4(col, cutAlpha * uEnterAlpha * uScrollFade);
+    fragColor = vec4(col, cutAlpha * uEnterAlpha);
   }
 `
 
-const HERO_Y = 5.0
-
-export class LogoHero {
+export class Logo3D {
   constructor(scene, gltf, videoTex = null) {
     this._scene      = scene.instance
     this._group      = new THREE.Group()
@@ -133,13 +120,13 @@ export class LogoHero {
     this._mouse      = new THREE.Vector2(0.5, 0.5)
     this._mouseStrength      = 0
     this._mouseStrengthTarget = 0
+
     if (!videoTex) {
       const fb = new THREE.DataTexture(new Uint8Array([0, 0, 0, 255]), 1, 1, THREE.RGBAFormat)
       fb.needsUpdate = true
       videoTex = fb
     }
-    this._videoTex  = videoTex
-    this._hasVideo  = !(videoTex instanceof THREE.DataTexture)
+    this._videoTex = videoTex
 
     window.addEventListener('mousemove', (e) => {
       this._mouse.x = e.clientX / window.innerWidth
@@ -149,10 +136,17 @@ export class LogoHero {
 
     this._scene.add(this._group)
     if (gltf) this._applyGLTF(gltf)
+    window.addEventListener('resize', () => this._applyScale())
+  }
+
+  _applyScale() {
+    const aspect = window.innerWidth / window.innerHeight
+    const s = aspect < 1 ? Math.max(0.50, aspect * 0.90) : 1.0
+    this._group.scale.setScalar(s)
   }
 
   _applyGLTF(gltf) {
-    const model  = gltf.scene
+    const model  = gltf.scene.clone(true)
     const box    = new THREE.Box3().setFromObject(model)
     const size   = new THREE.Vector3()
     const center = new THREE.Vector3()
@@ -160,10 +154,9 @@ export class LogoHero {
     box.getCenter(center)
 
     const maxDim = Math.max(size.x, size.y, size.z)
-    const scale  = 2.0 / maxDim
+    const scale  = 1.0 / maxDim
     model.scale.setScalar(scale)
     model.position.sub(center.multiplyScalar(scale))
-    model.position.y += HERO_Y
 
     model.traverse(child => {
       if (!child.isMesh) return
@@ -174,23 +167,20 @@ export class LogoHero {
         uniforms: {
           uTime:          { value: 0 },
           uEnterAlpha:    { value: 0 },
-          uScrollFade:    { value: 1 },
           uMouse:         { value: new THREE.Vector2(0.5, 0.5) },
           uMouseStrength: { value: 0 },
           uVideoTex:      { value: this._videoTex },
-          uCamY:          { value: 0 },
-          uVertScale:     { value: 7 },
         },
         transparent: true,
         side:        THREE.DoubleSide,
         depthWrite:  false,
       })
-      child.material  = mat
-      child.renderOrder = -1
+      child.material = mat
       this._mats.push(mat)
     })
 
     this._group.add(model)
+    this._applyScale()
     this._ready = true
 
     gsap.to(this._enterProxy, {
@@ -201,25 +191,20 @@ export class LogoHero {
     })
   }
 
-  update({ elapsed, progress, camY = HERO_Y, shaderCamY = camY, vertScale = 7 }) {
+  update({ elapsed, progress = 0, camY = 0, vertScale = 7 }) {
     if (!this._ready) return
-
     if (this._videoTex) this._videoTex.needsUpdate = true
 
-    this._group.position.y = camY - HERO_Y
-    this._group.rotation.x = 0
-    this._group.rotation.y = Math.PI / 6 + progress * Math.PI * 2
+    this._group.position.y = -(camY + 4.5) * 2 / vertScale
+    this._group.rotation.y = Math.PI + progress * Math.PI * 2
 
     this._mouseStrengthTarget *= 0.88
     this._mouseStrength += (this._mouseStrengthTarget - this._mouseStrength) * 0.12
 
     this._mats.forEach(m => {
       m.uniforms.uTime.value          = elapsed
-      m.uniforms.uScrollFade.value    = 1.0
       m.uniforms.uMouse.value.copy(this._mouse)
       m.uniforms.uMouseStrength.value = this._mouseStrength
-      m.uniforms.uCamY.value          = shaderCamY
-      m.uniforms.uVertScale.value     = vertScale
     })
   }
 
@@ -228,6 +213,5 @@ export class LogoHero {
       if (child.isMesh) { child.geometry.dispose(); child.material.dispose() }
     })
     this._scene.remove(this._group)
-    if (this._lights) this._lights.forEach(l => this._scene.remove(l))
   }
 }

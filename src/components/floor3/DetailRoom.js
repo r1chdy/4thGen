@@ -1,7 +1,9 @@
 // Phòng chi tiết (detail room) — hiện khi click vào card, hiển thị nội dung project bên trong không gian 3D
 import * as THREE from 'three'
 import gsap from 'gsap'
-import { Text } from 'troika-three-text'
+let Text = null
+let _troika = null
+const ensureText = () => (_troika ??= import('troika-three-text').then(m => { Text = m.Text }))
 
 const FONT     = '/fonts/SpaceMono-Bold.ttf'
 const ROOM_HALF = 1.2   // box depth half
@@ -183,7 +185,8 @@ export class DetailRoom {
     this._cards = []
   }
 
-  _buildCards(proj) {
+  async _buildCards(proj) {
+    await ensureText()
     this._clearCards()
 
     const videos = (proj.videos && proj.videos.length > 0)

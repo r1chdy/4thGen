@@ -11,15 +11,15 @@ import {
   displayShader,
 } from './Shaders.js'
 
-const SIM_RESOLUTION       = 128
+const SIM_RESOLUTION       = 64
 const DYE_RESOLUTION       = 1440
-const DENSITY_DISSIPATION  = 3.5
-const VELOCITY_DISSIPATION = 2
-const CURL                 = 10
+const DENSITY_DISSIPATION  = 5
+const VELOCITY_DISSIPATION = 10
+const CURL                 = 30
 const PRESSURE             = 0.1
 const PRESSURE_ITERATIONS  = 20
 
-export const SPLAT_RADIUS = 0.5
+export const SPLAT_RADIUS = 0.2
 export const SPLAT_FORCE  = 6000
 
 export class FluidSimulation {

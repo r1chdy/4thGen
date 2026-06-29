@@ -22,10 +22,6 @@ export class Scene {
     keyLight.position.set(3, 6, 4)
     this.instance.add(keyLight)
 
-    const fillLight = new THREE.DirectionalLight(0xC8D8FF, 2.0)
-    fillLight.position.set(-4, 2, -3)
-    this.instance.add(fillLight)
-
     const redFill = new THREE.DirectionalLight(0xDC3535, 1.8)
     redFill.position.set(5, -5, 5)
     this.instance.add(redFill)
@@ -60,7 +56,7 @@ export class Scene {
     this.lerpMouse.x += (this.mouse.x - this.lerpMouse.x) * LERP
     this.lerpMouse.y += (this.mouse.y - this.lerpMouse.y) * LERP
 
-    const ty = scrollY + this.lerpMouse.y * 0.18
+    const ty = scrollY
 
     this.camera.position.y += (ty - this.camera.position.y) * 0.05
 

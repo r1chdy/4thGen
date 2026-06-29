@@ -1,42 +1,46 @@
-// Model 3D trung tâm (cột xương sống) — load file GLTF, tự xoay, nằm giữa các tấm card khi scroll
 import * as THREE from 'three'
 import { CAM_Y_START, CAM_Y_RANGE } from './ProjectGrid.js'
 
 const COL_CENTER_Y = CAM_Y_START - CAM_Y_RANGE * 0.5
-const COL_X = -1.6
-const COL_Y = -30
-const COL_Z = -7.7
+const COL_X = 0
+const COL_Y = -25
+const COL_Z = 0
 const COL_ROT_Y = -3.14
 
-const EYE_NAMES = ['Eye_L.003', 'Eye_R.003']
-
 export class SpineColumn {
-  constructor(scene, headGltf, eyesGltf) {
+  constructor(scene, gltf) {
     this._group = new THREE.Group()
     this._group.position.set(COL_X, COL_Y, COL_Z)
     this._group.rotation.y = COL_ROT_Y
     scene.instance.add(this._group)
     this._mixer = null
     this._addLights()
-    if (headGltf) this._applyHead(headGltf)
-    if (eyesGltf) this._applyEyes(eyesGltf, headGltf?.scene)
+    if (gltf) this._applyModel(gltf)
   }
 
   _addLights() {
-    const key = new THREE.PointLight(0xd4af37, 6, 30)
-    key.position.set(3, 8, 5)
+    const key = new THREE.PointLight(0xfff8e7, 14, 60)
+    key.position.set(6, 16, 10)
     this._group.add(key)
 
-    const rim = new THREE.PointLight(0x4488ff, 4, 25)
-    rim.position.set(-4, 2, -6)
-    this._group.add(rim)
+    const rimR = new THREE.PointLight(0xd4af37, 16, 55)
+    rimR.position.set(7, 12, -16)
+    this._group.add(rimR)
 
-    const under = new THREE.PointLight(0xDC3535, 3, 20)
-    under.position.set(0, -6, 3)
+    const rimL = new THREE.PointLight(0x4466dd, 10, 50)
+    rimL.position.set(-8, 8, -14)
+    this._group.add(rimL)
+
+    const fill = new THREE.PointLight(0x8090cc, 2, 35)
+    fill.position.set(-8, 4, 8)
+    this._group.add(fill)
+
+    const under = new THREE.PointLight(0xDC3535, 4, 25)
+    under.position.set(0, -10, 5)
     this._group.add(under)
   }
 
-  _applyHead(gltf) {
+  _applyModel(gltf) {
     const model = gltf.scene
     const box   = new THREE.Box3().setFromObject(model)
     const size  = new THREE.Vector3()
@@ -46,38 +50,16 @@ export class SpineColumn {
     const scale = 35 / Math.max(size.x, size.y, size.z)
     model.scale.setScalar(scale)
     model.position.sub(center.multiplyScalar(scale))
+
     model.traverse(child => {
       if (!child.isMesh) return
-      if (EYE_NAMES.includes(child.name)) { child.visible = false; return }
-      const mats = Array.isArray(child.material) ? child.material : [child.material]
-      mats.forEach(m => { m.emissive = m.color.clone(); m.emissiveIntensity = 0 })
     })
+
     this._group.add(model)
     if (gltf.animations?.length) {
       this._mixer = new THREE.AnimationMixer(model)
       gltf.animations.forEach(clip => this._mixer.clipAction(clip).play())
     }
-  }
-
-  _applyEyes(gltf, headScene) {
-    const eyes = gltf.scene
-    if (headScene) {
-      eyes.position.copy(headScene.position)
-      eyes.scale.copy(headScene.scale)
-      eyes.quaternion.copy(headScene.quaternion)
-    }
-    eyes.traverse(child => {
-      if (!child.isMesh) return
-      const mats = Array.isArray(child.material) ? child.material : [child.material]
-      mats.forEach(m => {
-        m.color.set(0xd4af37)
-        m.roughness = 0.2
-        m.metalness = 0.9
-        m.emissiveIntensity = 0
-      })
-      child.add(new THREE.PointLight(0xffaa00, 4, 6))
-    })
-    this._group.add(eyes)
   }
 
   get group() { return this._group }

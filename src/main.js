@@ -12,14 +12,22 @@ import { Cursor }      from './components/Cursor.js'
 import { Nav }         from './components/Nav.js'
 import { Transition }  from './components/Transition.js'
 import { LogoHero }                          from './components/floor1/LogoHero.js'
+import { Galaxy }                            from './components/floor1/Galaxy.js'
 import { CAM_Y_START, CAM_Y_RANGE, THETA_MAX, ROT_DELAY } from './components/floor3/ProjectGrid.js'
 import { SpineColumn }      from './components/floor3/SpineColumn.js'
 import { SmokeCursor }      from './components/SmokeCursor.js'
+import { GalaxyGodRay }    from './components/floor1/GalaxyGodRay.js'
+import { Stars }           from './components/floor1/Stars.js'
 import { VideoLight }       from './components/VideoLight.js'
 import { HeroText }         from './components/floor2/HeroText.js'
+import { Logo3D }           from './components/floor2/Logo3D.js'
+import { GodRayBloom }      from './components/GodRayBloom.js'
+import { Particles }        from './components/Particles.js'
 import { DetailRoom }        from './components/floor3/DetailRoom.js'
 import { Compositor }        from './components/Compositor.js'
 import { CAM_RADIUS }        from './core/Scene.js'
+import { Floor2Sphere }      from './components/floor2/Floor2Sphere.js'
+import { JellyfishBackground } from './components/floor3/Jellyfish.js'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -36,12 +44,13 @@ const TEXTURE_URLS = [
   '/textures/proj5.jpg',
 ]
 
-const BASE = 'https://0gh5b9m2jggzcfbe.public.blob.vercel-storage.com'
+const R2 = 'https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev'
+
 const MODEL_URLS = {
-  dragonHead: `${BASE}/Dragon_Head_web.glb`,
-  dragonEyes: `${BASE}/Dragon_Eyes_web.glb`,
-  logo:       `${BASE}/4thgen_logo.glb`,
-  card:       `${BASE}/card.glb`,
+  landmark:   '/models/Landmark/Landmark.glb',
+  logo:       `${R2}/4thgen_logo.glb`,
+  card:       `${R2}/card.glb`,
+  earth:      `${R2}/Earth/Earth.gltf`,
 }
 
 // 3 sections, mỗi cái 1 viewport — targetY = idx * innerHeight
@@ -67,6 +76,11 @@ async function init() {
   // Env 3 (heroTextScene):  HeroText only
   const logoScene     = new THREE.Scene()
   const logoWrapper   = { instance: logoScene }
+  const galaxy        = new Galaxy(logoWrapper)
+  const stars         = new Stars(logoWrapper, { floorMin: 0.0,  floorMax: 999.0, renderOrder: -2 })
+  const starsFloor2   = new Stars(scene,       { floorMin: -9.0, floorMax: 0.0,   renderOrder: 102 })
+  const logo2Scene    = new THREE.Scene()
+  const logo2Wrapper  = { instance: logo2Scene }
   const heroTextScene = new THREE.Scene()
   const heroTextWrapper = { instance: heroTextScene }
 
@@ -80,16 +94,25 @@ async function init() {
     heroOrthoCamera.updateProjectionMatrix()
   })
 
-  const bg = new Background(scene)
+  const heroGodRay  = new GodRayBloom(renderer.instance, heroTextScene, heroOrthoCamera)
+  const logo2GodRay = new GodRayBloom(renderer.instance, logo2Scene, heroOrthoCamera)
+  logo2GodRay.setLightPos(0.5, 0.5)
+
+  const bg          = new Background(scene)
+  const cityBg      = new JellyfishBackground(scene)
+  const particles = new Particles(scene)
   let grid        = null
   let spineColumn = null
   let videoLight  = null
   let SPINE_BASE_Y = 0
-  new SmokeCursor()
+  const smokeCursor = new SmokeCursor()
   const heroText = new HeroText(heroTextWrapper)
 
+  let   floor2Sphere    = null
   const detailRoom      = new DetailRoom()
   const compositor      = new Compositor(renderer.instance)
+  const galaxyGodRay    = new GalaxyGodRay(renderer.instance)
+  const _galaxyCenter   = new THREE.Vector3(0, 1.5, 0)
 
   const _f2cUniforms = {
     tMain:       { value: compositor.mainTexture },
@@ -138,7 +161,8 @@ async function init() {
   const cursor      = new Cursor()
   const nav         = new Nav()
   const transition  = new Transition(renderer.instance)
-  let logoHero = null   // created after reveal sequence completes
+  let logoHero  = null
+  let logo3d    = null
 
   let _camScrollY = 5.0
   let _camTheta   = 0
@@ -158,8 +182,8 @@ async function init() {
   document.body.scrollTop = 0
 
   const lenis = new Lenis({
-    duration:        1.4,
-    easing:          (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+    duration:        1.0,
+    easing:          (t) => t,
     smoothWheel:     true,
     wheelMultiplier: 0.7,
   })
@@ -205,11 +229,18 @@ async function init() {
 
     const fovRad    = THREE.MathUtils.degToRad(scene.camera.fov)
     const vertScale = 2 * Math.tan(fovRad / 2) * CAM_RADIUS
-    bg.update({ elapsed, camY: scene.camera.position.y, vertScale })
+    bg.update({ elapsed, camY: _camScrollY, vertScale })
+    cityBg.update(elapsed)
+    if (floor2Sphere) floor2Sphere.update({ camY: _camScrollY, vertScale })
+    particles.update({ elapsed })
     if (grid)        grid.update({ elapsed, camY: scene.camera.position.y })
     if (spineColumn) spineColumn.update({ elapsed, delta })
     if (videoLight)  videoLight.update()
-    if (logoHero) logoHero.update({ elapsed, progress })
+    galaxy.update({ elapsed, camY: _camScrollY, vertScale })
+    stars.update({ camY: _camScrollY, vertScale })
+    starsFloor2.update({ camY: _camScrollY, vertScale })
+    if (logoHero) logoHero.update({ elapsed, progress, camY: _camScrollY, vertScale })
+    if (logo3d)   logo3d.update({ elapsed, progress, camY: scene.camera.position.y, vertScale })
     heroText.update({ progress, camY: scene.camera.position.y, vertScale })
     detailRoom.update(delta)
     cursor.update()
@@ -218,16 +249,22 @@ async function init() {
     _f2cUniforms.uVertScale.value  = vertScale
     _f2cUniforms.uTransition.value = compositor.t
 
+    compositor.setSmoke(smokeCursor.canvas)
     compositor.render(scene.instance, scene.camera, detailRoom.scene, detailRoom.camera)
+    // compositor output is in _finalRT; all subsequent renders also go there
 
     const cy = scene.camera.position.y
     const V  = THREE.Vector3
+    const finalTarget = compositor.finalTarget
 
     renderer.instance.autoClear = false
+    renderer.instance.setRenderTarget(finalTarget)
 
     renderer.instance.clippingPlanes = []
     renderer.instance.clearDepth()
-    if (compositor.t < 0.01) renderer.instance.render(heroTextScene, heroOrthoCamera)
+    if (compositor.t < 0.01) {
+      heroGodRay.render(finalTarget)
+    }
     renderer.instance.render(coverScene, scene.camera)
 
     // floor1: logo clipped to world_y > FLOOR1_Y, renders on top of floor2Cover
@@ -237,8 +274,19 @@ async function init() {
     renderer.instance.clearDepth()
     renderer.instance.render(logoScene, scene.camera)
 
+    _galaxyCenter.y = galaxy.centerY
+    const _godRayTouch = Math.max(0, Math.min(1, (2.5 - _camScrollY) / 2.5))
+    const _godRayStr   = 0.15 + _godRayTouch * 1.65
+    galaxyGodRay.render(logoScene, scene.camera, _galaxyCenter, _camScrollY, vertScale, _godRayStr, finalTarget)
+
     renderer.instance.clippingPlanes = []
+    logo2GodRay.render(finalTarget)
+
+    renderer.instance.clippingPlanes = []
+    renderer.instance.setRenderTarget(null)
     renderer.instance.autoClear = true
+
+    compositor.applyDistortion(renderer.instance)
   })
   raf.start()
 
@@ -300,9 +348,12 @@ async function init() {
   ])
 
   grid         = new ProjectGrid(scene, loader, loader.get('card'))
-  spineColumn  = new SpineColumn(scene, loader.get('dragonHead'), loader.get('dragonEyes'))
-  SPINE_BASE_Y = spineColumn.group.position.y
+  spineColumn  = new SpineColumn(scene, loader.get('landmark'))
+  floor2Sphere = new Floor2Sphere(scene, loader.get('earth'))
+  SPINE_BASE_Y = spineColumn?.group.position.y ?? 0
   videoLight   = new VideoLight(scene, grid.videoEl)
+  logo3d       = new Logo3D(logo2Wrapper, loader.get('logo'), grid.videoTex)
+  galaxy.setVideoTex(grid.videoTex)
 
   // Counter đến 100
   await new Promise(resolve => {
@@ -320,23 +371,33 @@ async function init() {
   })
 
   // ── Reveal sequence ───────────────────────────────────────────────
-  const tl = gsap.timeline()
+  const tl = gsap.timeline({ delay: 0.7 })
 
-  tl.to('.ls-studio, .ls-eyebrow, .ls-track, .ls-num', {
-    opacity: 0, y: -16,
-    duration: 0.5, stagger: 0.05,
-    ease: 'power2.in',
-  })
-  .to('#loader-screen', {
-    yPercent: -100,
-    duration: 0.9,
+  tl.to('.ls-num', {
+    opacity: 0,
+    duration: 0.5,
     ease: 'power3.inOut',
+  })
+  .call(() => {
+    document.querySelectorAll('.ripple-ring').forEach(el => {
+      el.style.animationPlayState = 'paused'
+    })
+  }, null, '-=0.15')
+  .to('.loader-wrapper', {
+    scale: 60,
+    duration: 1.4,
+    ease: 'power4.in',
+  }, '-=0.1')
+  .to('#loader-screen', {
+    opacity: 0,
+    duration: 0.55,
+    ease: 'power2.inOut',
     onComplete: () => {
       document.getElementById('loader-screen').style.display = 'none'
-      logoHero = new LogoHero(logoWrapper, loader.get('logo'))
+      logoHero = new LogoHero(logoWrapper, loader.get('logo'), grid?.videoTex)
     },
-  }, '-=0.1')
-  .to('#overlay', { opacity: 1, duration: 0.4, ease: 'power2.out' }, '-=0.4')
+  }, '-=0.15')
+  .to('#overlay', { opacity: 1, duration: 0.4, ease: 'power2.out' }, '-=0.2')
   .from('#nav', { y: -20, opacity: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
   .from('.scroll-hint', { opacity: 0, duration: 0.6, ease: 'power2.out' }, '-=0.3')
 
