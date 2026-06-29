@@ -189,6 +189,7 @@ export class ProjectGrid {
 
     const videoEl = document.createElement('video')
     this.videoEl        = videoEl
+    videoEl.crossOrigin = 'anonymous'
     videoEl.src         = 'https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev/hero-bg.mp4'
     videoEl.loop        = true
     videoEl.muted       = true
