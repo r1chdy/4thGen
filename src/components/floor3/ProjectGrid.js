@@ -190,13 +190,17 @@ export class ProjectGrid {
     const videoEl = document.createElement('video')
     this.videoEl        = videoEl
     videoEl.crossOrigin = 'anonymous'
-    videoEl.src         = 'https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev/hero-bg.mp4'
     videoEl.loop        = true
     videoEl.muted       = true
     videoEl.playsInline = true
-    videoEl.play().catch(() => {})
     this._videoTex = new THREE.VideoTexture(videoEl)
     this._videoTex.colorSpace = THREE.SRGBColorSpace
+    this._videoTex.needsUpdate = false
+    videoEl.addEventListener('loadedmetadata', () => {
+      videoEl.play().catch(() => {})
+      this._videoTex.needsUpdate = true
+    })
+    videoEl.src = 'https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev/hero-bg.mp4'
 
     this.group = new THREE.Group()
     this.scene.add(this.group)
