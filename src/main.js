@@ -47,10 +47,9 @@ const TEXTURE_URLS = [
 const R2 = 'https://pub-b791cc020c8f4fcab9c651511349d2ec.r2.dev'
 
 const MODEL_URLS = {
-  landmark:   '/models/Landmark/Landmark.glb',
-  logo:       `${R2}/4thgen_logo.glb`,
-  card:       `${R2}/card.glb`,
-  earth:      `${R2}/Earth/Earth.gltf`,
+  logo:  `${R2}/4thgen_logo.glb`,
+  card:  `${R2}/card.glb`,
+  earth: `${R2}/Earth/Earth.gltf`,
 }
 
 // 3 sections, mỗi cái 1 viewport — targetY = idx * innerHeight
